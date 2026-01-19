@@ -47,8 +47,8 @@ func New(baseURL, token string) Client {
 	}
 }
 
-// FetchForks retrieves all forks owned by the authenticated user.
-func (c Client) FetchForks(ctx context.Context) ([]Repo, error) {
+// FetchRepos retrieves owned repositories, optionally restricted to forks.
+func (c Client) FetchRepos(ctx context.Context, wantForks bool) ([]Repo, error) {
 	if c.Token == "" {
 		return nil, errors.New("GITHUB_TOKEN not set")
 	}
@@ -87,7 +87,10 @@ func (c Client) FetchForks(ctx context.Context) ([]Repo, error) {
 		}
 
 		for _, r := range payload {
-			if !r.Fork {
+			if wantForks && !r.Fork {
+				continue
+			}
+			if !wantForks && r.Fork {
 				continue
 			}
 			repos = append(repos, mapRepo(r))

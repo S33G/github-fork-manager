@@ -35,6 +35,12 @@ make install        # install to ~/.local/bin by default
 make test           # run tests
 ```
 
+### Manage non-fork repos
+- Default view shows forks you own. To manage normal repos instead, run:
+  ```bash
+  github-fork-manager --non-forks
+  ```
+
 ### Configuration
 - Env: `GITHUB_TOKEN` (required), `GITHUB_API_BASE` (optional, defaults to `https://api.github.com`).
 - Optional config file: `~/.github-fork-manager/config.json`

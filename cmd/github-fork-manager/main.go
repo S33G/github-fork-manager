@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
@@ -29,6 +30,7 @@ const (
 type model struct {
 	cfg           config.Config
 	client        gh.Client
+	showForks     bool
 	repos         []gh.Repo
 	filtered      []gh.Repo
 	cursor        int
@@ -48,7 +50,7 @@ type model struct {
 	confirmExpect string
 }
 
-func newModel(cfg config.Config) model {
+func newModel(cfg config.Config, showForks bool) model {
 	ti := textinput.New()
 	ti.Placeholder = "type to filter (owner/name, language); enter to apply, esc to clear"
 	ti.CharLimit = 64
@@ -62,6 +64,7 @@ func newModel(cfg config.Config) model {
 	return model{
 		cfg:           cfg,
 		client:        gh.New(cfg.APIBase, cfg.Token),
+		showForks:     showForks,
 		selected:      make(map[string]bool),
 		deleteResults: make(map[string]string),
 		filterInput:   ti,
@@ -75,7 +78,7 @@ func newModel(cfg config.Config) model {
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		loadReposCmd(m.client),
+		loadReposCmd(m.client, m.showForks),
 		loadUserCmd(m.client),
 	)
 }
@@ -95,11 +98,11 @@ type deleteResultMsg struct {
 	err  error
 }
 
-func loadReposCmd(client gh.Client) tea.Cmd {
+func loadReposCmd(client gh.Client, showForks bool) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		repos, err := client.FetchForks(ctx)
+		repos, err := client.FetchRepos(ctx, showForks)
 		return reposLoadedMsg{repos: repos, err: err}
 	}
 }
@@ -137,7 +140,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil {
 			m.repos = sortRepos(msg.repos)
 			m.filtered = m.applyFilter(m.filterInput.Value())
-			m.status = fmt.Sprintf("Loaded %d forks", len(m.repos))
+			label := "repos"
+			if m.showForks {
+				label = "forks"
+			}
+			m.status = fmt.Sprintf("Loaded %d %s", len(m.repos), label)
 			m.ensureVisible()
 		} else {
 			m.status = "Failed to load forks"
@@ -234,7 +241,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			m.loading = true
 			m.status = "Refreshing…"
-			return m, loadReposCmd(m.client)
+			return m, loadReposCmd(m.client, m.showForks)
 		case "/":
 			m.mode = modeFiltering
 			m.filterInput.Focus()
@@ -551,6 +558,10 @@ func logLine(path, line string) {
 }
 
 func main() {
+	var nonForks bool
+	flag.BoolVar(&nonForks, "non-forks", false, "show owned non-fork repositories instead of forks")
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %v\n", err)
@@ -560,7 +571,9 @@ func main() {
 		fmt.Fprintf(os.Stderr, "log dir error: %v\n", err)
 	}
 
-	p := tea.NewProgram(newModel(cfg))
+	showForks := !nonForks
+
+	p := tea.NewProgram(newModel(cfg, showForks))
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
