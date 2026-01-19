@@ -15,7 +15,7 @@
 ## Features at a glance
 - 🔍 Fuzzy-ish filter by name/owner/language with live narrowing.
 - ✅ Multi-select with space/a; batch delete with inline progress + logging to `~/.github-fork-manager/actions.log`.
-- 🔗 Clickable repo names (OSC 8 hyperlinks) to open in your terminal.
+- 🔗 Clickable repo names (hyperlinks) to open in your terminal.
 - 🌐 GitHub.com or custom API base (GHE).
 - 🔄 `--non-forks` mode to manage your owned repos too.
 
