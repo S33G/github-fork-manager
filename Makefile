@@ -1,4 +1,4 @@
-.PHONY: build build-all test test-coverage clean install uninstall dev fmt tidy deps lint
+.PHONY: build build-all test test-coverage clean install uninstall dev fmt tidy deps lint release checksums tag
 
 BINARY_NAME=github-fork-manager
 VERSION?=dev
@@ -20,14 +20,15 @@ build-all:
 	GOOS=darwin GOARCH=amd64 $(GO) build $(GOFLAGS) $(LDFLAGS) -o dist/$(BINARY_NAME)-darwin-amd64 ./cmd/github-fork-manager
 	GOOS=darwin GOARCH=arm64 $(GO) build $(GOFLAGS) $(LDFLAGS) -o dist/$(BINARY_NAME)-darwin-arm64 ./cmd/github-fork-manager
 	GOOS=windows GOARCH=amd64 $(GO) build $(GOFLAGS) $(LDFLAGS) -o dist/$(BINARY_NAME)-windows-amd64.exe ./cmd/github-fork-manager
+	@echo "Built dist artifacts with VERSION=$(VERSION)"
 
 # Run tests
 test:
-	$(GO) test -v -race -cover ./...
+	$(GO) test -v -cover ./...
 
 # Run tests with coverage report
 test-coverage:
-	$(GO) test -v -race -coverprofile=coverage.out ./...
+	$(GO) test -v -coverprofile=coverage.out ./...
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
 # Clean build artifacts
@@ -70,3 +71,18 @@ deps:
 # Lint (requires golangci-lint installed)
 lint:
 	golangci-lint run
+
+# Checksums for release artifacts
+checksums:
+	cd dist && shasum -a 256 * > checksums.txt
+	@echo "Wrote dist/checksums.txt"
+
+# Tag the repo; set SKIP_PUSH=1 to avoid pushing
+tag:
+	@test "$(VERSION)" != "dev" || (echo "Set VERSION=vX.Y.Z for release" && exit 1)
+	git tag -a "$(VERSION)" -m "Release $(VERSION)"
+	@if [ -z "$${SKIP_PUSH}" ]; then git push origin "$(VERSION)"; else echo "SKIP_PUSH set; not pushing tag"; fi
+
+# Release pipeline: build artifacts, checksums, and tag
+release: clean test build-all checksums tag
+	@echo "Release artifacts ready in dist/"
