@@ -1,0 +1,16 @@
+# Binaries and build artifacts
+github-fork-manager
+dist/
+
+# Coverage and test outputs
+coverage.out
+coverage.html
+
+# Editor and OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Go tooling
+bin/
