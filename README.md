@@ -1,83 +1,72 @@
-## GitHub Fork Manager (TUI)
+<div align="center">
 
-> **Warning:** This tool deletes repositories you select. Double-check selections and ensure your `GITHUB_TOKEN` has the intended permissions before proceeding.
+### GitHub Fork Manager · TUI cleanup for your forks (and repos)
 
-Fast TUI for listing your GitHub forks and deleting many at once.
+**Terminal-native, fast, and deliberate.** Multi-select, confirm, delete — with logs and hyperlinks you can Ctrl/Cmd-click.
 
-### Features
-- Lists all forks owned by the authenticated user with paging handled automatically.
-- Quick filtering by name/owner/language, multi-select, and batch delete with progress.
-- Safe defaults: explicit selection, inline errors, and an action log at `~/.github-fork-manager/actions.log`.
-- Works against github.com or a custom API base (GitHub Enterprise).
+<br/>
 
-### Install
-1) Download a release binary from GitHub Releases once the workflow runs on a tag (files: `github-fork-manager-{os}-{arch}`).
-2) Make it executable and place on your PATH, e.g.:
-   ```bash
-   chmod +x github-fork-manager-linux-amd64
-   mv github-fork-manager-linux-amd64 ~/.local/bin/github-fork-manager
-   ```
-3) Provide a token with `GITHUB_TOKEN` (classic or PAT with `delete_repo` + `repo` scopes). Create one here: https://github.com/settings/tokens
+> ⚠️ **Danger zone:** This tool deletes repositories you select. Double-check selections and scopes on your `GITHUB_TOKEN`.
 
-### Quick install via curl
+</div>
+
+---
+
+## Features at a glance
+- 🔍 Fuzzy-ish filter by name/owner/language with live narrowing.
+- ✅ Multi-select with space/a; batch delete with inline progress + logging to `~/.github-fork-manager/actions.log`.
+- 🔗 Clickable repo names (OSC 8 hyperlinks) to open in your terminal.
+- 🌐 GitHub.com or custom API base (GHE).
+- 🔄 `--non-forks` mode to manage your owned repos too.
+
+## Install quickly
 ```bash
 curl -fsSL https://raw.githubusercontent.com/seeg/github-fork-manager/main/scripts/install.sh | bash
 # optional: VERSION=v0.1.0 INSTALL_DIR=/usr/local/bin bash install.sh
 ```
+Manual:
+```bash
+chmod +x github-fork-manager-linux-amd64
+mv github-fork-manager-linux-amd64 ~/.local/bin/github-fork-manager
+```
 
-### Quick setup script (config)
-- Run `./scripts/setup-config.sh` to write `~/.github-fork-manager/config.json` interactively (token, API base, log path).
-- You can also just set `GITHUB_TOKEN` and skip the config file.
+## Configure once
+- Export `GITHUB_TOKEN` (classic/PAT with `delete_repo` + `repo`).
+- Optional config file `~/.github-fork-manager/config.json`:
+  ```json
+  { "token": "ghp_xxx", "api_base": "https://api.github.com", "log_path": "~/.github-fork-manager/actions.log" }
+  ```
+- Helper: `./scripts/setup-config.sh` prompts and writes the file.
 
-### Run from source
+## Run
+```bash
+github-fork-manager          # forks view
+github-fork-manager --non-forks  # manage owned repos
+```
+From source:
 ```bash
 go run ./cmd/github-fork-manager
-```
-Or use the Makefile helpers (Go 1.22+):
-```bash
-make build          # local binary
-make build-all      # cross-compile to dist/
-make install        # install to ~/.local/bin by default
-make test           # run tests
+# or
+make build && ./github-fork-manager
 ```
 
-### Manage non-fork repos
-- Default view shows forks you own. To manage normal repos instead, run:
-  ```bash
-  github-fork-manager --non-forks
-  ```
-
-### Configuration
-- Env: `GITHUB_TOKEN` (required), `GITHUB_API_BASE` (optional, defaults to `https://api.github.com`).
-- Optional config file: `~/.github-fork-manager/config.json`
-  ```json
-  {
-    "token": "ghp_your_token",
-    "api_base": "https://api.github.com",
-    "log_path": "~/.github-fork-manager/actions.log"
-  }
-  ```
-
-### Keybindings
+## Keys you’ll use
 - `j/k` or arrows: move
 - `space`: toggle selection
 - `a`: select/deselect all visible
-- `/`: filter (type, Enter to apply, Esc to clear)
-- `d`: delete selected forks (sequential, with inline status)
-- `r`: refresh list
-- `q` or `Ctrl+C`: quit
+- `/`: filter (Enter apply, Esc clear)
+- `d`: delete selected (requires typing `<username> approves`)
+- `r`: refresh · `q`/`Ctrl+C`: quit · `?`: help blurb
 
-### Notes on deleting
-- Deletions are sequential to stay gentle on the API. Errors per repo are surfaced inline.
-- Actions are logged to `~/.github-fork-manager/actions.log`.
-- A missing token will be shown in the UI; set `GITHUB_TOKEN` before deleting.
+## Safety + logging
+- Confirmation gate: type `<github-username> approves` before deletion runs.
+- Sequential deletes to stay gentle on rate limits; inline errors per repo.
+- Actions logged to `~/.github-fork-manager/actions.log`.
 
-### Release pipeline
-- Workflow: `.github/workflows/release.yml`
-- Trigger: push a tag matching `v*`.
-- Builds: Linux/macOS/Windows (amd64) binaries via `go build`, uploads to the tag release.
+## Release pipeline
+- Tag `v*` → GitHub Actions builds Linux/macOS/Windows binaries + checksums.
+- Assets: `github-fork-manager-{os}-{arch}`, `checksums.txt`.
 
-### Development
-- Go 1.22+
-- Update deps: `go mod tidy`
-- Lint/test as desired; core logic is in `cmd/github-fork-manager` and `internal/gh`.
+## Dev
+- Go 1.22+; `make build`, `make test`, `make build-all`, `make release VERSION=vX.Y.Z`.
+- Core code: `cmd/github-fork-manager`, `internal/gh`, `internal/config`.
