@@ -2,6 +2,11 @@
 
 ### GitHub Fork Manager · TUI cleanup for your forks (and repos)
 
+[![Release](https://img.shields.io/github/v/release/seeg/github-fork-manager?logo=github)](https://github.com/seeg/github-fork-manager/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/seeg/github-fork-manager/release.yml?logo=githubactions&label=release)](https://github.com/seeg/github-fork-manager/actions/workflows/release.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go)](#dev)
+
 **Terminal-native, fast, and deliberate.** Multi-select, confirm, delete — with logs and hyperlinks you can Ctrl/Cmd-click.
 
 <br/>
