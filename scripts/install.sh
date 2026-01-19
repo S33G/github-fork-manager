@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="seeg/github-fork-manager"
+REPO="S33G/github-fork-manager"
 BINARY_NAME="github-fork-manager"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 VERSION="${VERSION:-${1:-}}"

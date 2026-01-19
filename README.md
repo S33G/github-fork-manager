@@ -2,8 +2,8 @@
 
 ### GitHub Fork Manager · TUI cleanup for your forks (and repos)
 
-[![Release](https://img.shields.io/github/v/tag/seeg/github-fork-manager?logo=github)](https://github.com/seeg/github-fork-manager/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/seeg/github-fork-manager/release.yml?branch=main&logo=githubactions&label=release)](https://github.com/seeg/github-fork-manager/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/tag/S33G/github-fork-manager?logo=github)](https://github.com/S33G/github-fork-manager/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/S33G/github-fork-manager/release.yml?branch=main&logo=githubactions&label=release)](https://github.com/S33G/github-fork-manager/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go)](#dev)
 
@@ -26,7 +26,7 @@
 
 ## Install quickly
 ```bash
-curl -fsSL https://raw.githubusercontent.com/seeg/github-fork-manager/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/S33G/github-fork-manager/main/scripts/install.sh | bash
 # optional: VERSION=v0.1.0 INSTALL_DIR=/usr/local/bin bash install.sh
 ```
 Manual:
