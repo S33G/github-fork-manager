@@ -19,6 +19,12 @@ Fast TUI for listing your GitHub forks and deleting many at once.
    ```
 3) Provide a token with `GITHUB_TOKEN` (classic or PAT with `delete_repo` + `repo` scopes). Create one here: https://github.com/settings/tokens
 
+### Quick install via curl
+```bash
+curl -fsSL https://raw.githubusercontent.com/seeg/github-fork-manager/main/scripts/install.sh | bash
+# optional: VERSION=v0.1.0 INSTALL_DIR=/usr/local/bin bash install.sh
+```
+
 ### Quick setup script (config)
 - Run `./scripts/setup-config.sh` to write `~/.github-fork-manager/config.json` interactively (token, API base, log path).
 - You can also just set `GITHUB_TOKEN` and skip the config file.

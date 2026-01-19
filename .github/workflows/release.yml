@@ -23,21 +23,30 @@ jobs:
           EXT=""
           if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/github-fork-manager-${{ matrix.goos }}-${{ matrix.goarch }}${EXT} ./cmd/github-fork-manager
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*
+          retention-days: 7
+
   release:
     runs-on: ubuntu-latest
     needs: build
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: binaries
+          pattern: binaries-*
           path: dist
+          merge-multiple: true
+      - name: Create checksums
+        run: |
+          (cd dist && shasum -a 256 * > checksums.txt)
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/*
+          files: |
+            dist/github-fork-manager-*
+            dist/checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
