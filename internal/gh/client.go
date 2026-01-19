@@ -134,6 +134,37 @@ func (c Client) DeleteRepo(ctx context.Context, fullName string) error {
 	return fmt.Errorf("delete %s: %s: %s", fullName, resp.Status, strings.TrimSpace(string(body)))
 }
 
+// CurrentUser fetches the login of the authenticated user.
+func (c Client) CurrentUser(ctx context.Context) (string, error) {
+	if c.Token == "" {
+		return "", errors.New("GITHUB_TOKEN not set")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/user", c.BaseURL), nil)
+	if err != nil {
+		return "", err
+	}
+	c.applyHeaders(req)
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("whoami: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+	var payload struct {
+		Login string `json:"login"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return "", err
+	}
+	return payload.Login, nil
+}
+
 func (c Client) applyHeaders(req *http.Request) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	if c.Token != "" {

@@ -23,6 +23,7 @@ type mode int
 const (
 	modeNormal mode = iota
 	modeFiltering
+	modeConfirm
 )
 
 type model struct {
@@ -42,6 +43,9 @@ type model struct {
 	deleteResults map[string]string
 	filterInput   textinput.Model
 	mode          mode
+	userLogin     string
+	confirmInput  textinput.Model
+	confirmExpect string
 }
 
 func newModel(cfg config.Config) model {
@@ -50,12 +54,18 @@ func newModel(cfg config.Config) model {
 	ti.CharLimit = 64
 	ti.Prompt = "/ "
 
+	ci := textinput.New()
+	ci.Placeholder = "your-username approves"
+	ci.CharLimit = 64
+	ci.Prompt = "confirm> "
+
 	return model{
 		cfg:           cfg,
 		client:        gh.New(cfg.APIBase, cfg.Token),
 		selected:      make(map[string]bool),
 		deleteResults: make(map[string]string),
 		filterInput:   ti,
+		confirmInput:  ci,
 		loading:       true,
 		status:        "Loading forks…",
 		mode:          modeNormal,
@@ -64,11 +74,19 @@ func newModel(cfg config.Config) model {
 }
 
 func (m model) Init() tea.Cmd {
-	return loadReposCmd(m.client)
+	return tea.Batch(
+		loadReposCmd(m.client),
+		loadUserCmd(m.client),
+	)
 }
 
 type reposLoadedMsg struct {
 	repos []gh.Repo
+	err   error
+}
+
+type userLoadedMsg struct {
+	login string
 	err   error
 }
 
@@ -95,6 +113,15 @@ func deleteNextCmd(client gh.Client, repo gh.Repo) tea.Cmd {
 	}
 }
 
+func loadUserCmd(client gh.Client) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		login, err := client.CurrentUser(ctx)
+		return userLoadedMsg{login: login, err: err}
+	}
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -114,6 +141,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ensureVisible()
 		} else {
 			m.status = "Failed to load forks"
+		}
+		return m, nil
+	case userLoadedMsg:
+		if msg.err == nil && msg.login != "" {
+			m.userLogin = msg.login
 		}
 		return m, nil
 	case deleteResultMsg:
@@ -140,6 +172,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Key handling.
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.mode == modeConfirm {
+			var cmd tea.Cmd
+			m.confirmInput, cmd = m.confirmInput.Update(msg)
+			switch msg.Type {
+			case tea.KeyEnter:
+				if m.confirmInput.Value() == m.confirmExpect {
+					m.mode = modeNormal
+					if len(m.deleteQueue) == 0 {
+						m.status = "Nothing selected"
+						return m, cmd
+					}
+					m.deleting = true
+					m.status = fmt.Sprintf("Deleting %d repos…", len(m.deleteQueue))
+					return m, tea.Batch(cmd, deleteNextCmd(m.client, m.deleteQueue[0]))
+				}
+				m.status = fmt.Sprintf("Type exact confirmation: %q", m.confirmExpect)
+			case tea.KeyEsc:
+				m.mode = modeNormal
+				m.deleteQueue = nil
+				m.status = "Delete cancelled"
+			}
+			return m, cmd
+		}
+
 		if m.mode == modeFiltering {
 			var cmd tea.Cmd
 			m.filterInput, cmd = m.filterInput.Update(msg)
@@ -199,11 +255,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.deleteQueue = queue
-			m.deleting = true
-			m.status = fmt.Sprintf("Deleting %d repos…", len(queue))
-			if len(queue) > 0 {
-				return m, deleteNextCmd(m.client, queue[0])
-			}
+			expect := approvalPhrase(m.userLogin)
+			m.confirmExpect = expect
+			m.confirmInput.SetValue("")
+			m.confirmInput.Placeholder = expect
+			m.mode = modeConfirm
+			m.status = fmt.Sprintf("Confirm delete %d repos: type %q then Enter (Esc to cancel)", len(queue), expect)
+			return m, nil
 		case "?":
 			m.status = "Keys: j/k move · space select · a select all · / filter · d delete · r refresh · q quit"
 		}
@@ -354,6 +412,12 @@ func (m model) View() string {
 	}
 	b.WriteString("\n\n")
 
+	if m.mode == modeConfirm {
+		b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("203")).Render("Confirmation required") + "\n")
+		b.WriteString(fmt.Sprintf("Type %q then press Enter to delete %d repos (Esc to cancel)\n", m.confirmExpect, len(m.deleteQueue)))
+		b.WriteString(m.confirmInput.View() + "\n\n")
+	}
+
 	if m.loading {
 		b.WriteString("Loading forks…\n")
 		return b.String()
@@ -458,6 +522,13 @@ func hyperlink(url, text string) string {
 	}
 	esc := "\x1b"
 	return fmt.Sprintf("%s]8;;%s%s\\%s%s]8;;%s\\", esc, url, esc, text, esc, esc)
+}
+
+func approvalPhrase(login string) string {
+	if login == "" {
+		login = "your-github-username"
+	}
+	return fmt.Sprintf("%s approves", login)
 }
 
 func logLine(path, line string) {
