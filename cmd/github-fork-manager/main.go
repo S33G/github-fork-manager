@@ -179,6 +179,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyEnter:
 				if m.confirmInput.Value() == m.confirmExpect {
 					m.mode = modeNormal
+					m.confirmInput.Blur()
 					if len(m.deleteQueue) == 0 {
 						m.status = "Nothing selected"
 						return m, cmd
@@ -190,6 +191,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = fmt.Sprintf("Type exact confirmation: %q", m.confirmExpect)
 			case tea.KeyEsc:
 				m.mode = modeNormal
+				m.confirmInput.Blur()
 				m.deleteQueue = nil
 				m.status = "Delete cancelled"
 			}
@@ -259,6 +261,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.confirmExpect = expect
 			m.confirmInput.SetValue("")
 			m.confirmInput.Placeholder = expect
+			m.confirmInput.Focus()
+			m.filterInput.Blur()
 			m.mode = modeConfirm
 			m.status = fmt.Sprintf("Confirm delete %d repos: type %q then Enter (Esc to cancel)", len(queue), expect)
 			return m, nil
